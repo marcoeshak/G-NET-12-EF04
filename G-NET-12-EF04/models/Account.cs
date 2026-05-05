@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Transactions;
-
+using Microsoft.EntityFrameworkCore;
 namespace G_NET_12_EF04.models
 {
     public class Account
