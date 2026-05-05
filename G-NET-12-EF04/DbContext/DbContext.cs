@@ -11,37 +11,31 @@ using Microsoft.EntityFrameworkCore;
 
 namespace G_NET_12_EF04.DbContext
 {
-    public class BankContext : DbContext
+    public class BankDbContext : DbContext
     {
-        protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-        {
-            optionsBuilder.UseSqlServer(
-                "Server=.;Database=BankDB;Trusted_Connection=True;TrustServerCertificate=True");
-        }
+        public DbSet<Branch> Branches { get; set; }
+        public DbSet<Manager> Managers { get; set; }
+        public DbSet<Customer> Customers { get; set; }
+        public DbSet<Account> Accounts { get; set; }
+        public DbSet<CustomerAccount> CustomerAccounts { get; set; }
+        public DbSet<Transaction> Transactions { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
-            modelBuilder.Entity<CustomerAccount>()
-                .HasKey(ca => new
-                {
-                    ca.CustomerId,
-                    ca.AccountId
-                });
+            // Unique BranchCode
+            modelBuilder.Entity<Branch>()
+                .HasIndex(b => b.BranchCode)
+                .IsUnique();
 
+            // One-to-One Branch - Manager
             modelBuilder.Entity<Branch>()
                 .HasOne(b => b.Manager)
                 .WithOne(m => m.Branch)
                 .HasForeignKey<Branch>(b => b.ManagerId);
 
-            modelBuilder.Entity<Branch>()
-                .HasMany(b => b.Accounts)
-                .WithOne(a => a.Branch)
-                .HasForeignKey(a => a.BranchId);
-
-            modelBuilder.Entity<Account>()
-                .HasMany(a => a.Transactions)
-                .WithOne(t => t.Account)
-                .HasForeignKey(t => t.AccountId);
+            // Many-to-Many CustomerAccount
+            modelBuilder.Entity<CustomerAccount>()
+                .HasKey(ca => new { ca.CustomerId, ca.AccountNumber });
 
             modelBuilder.Entity<CustomerAccount>()
                 .HasOne(ca => ca.Customer)
@@ -51,42 +45,30 @@ namespace G_NET_12_EF04.DbContext
             modelBuilder.Entity<CustomerAccount>()
                 .HasOne(ca => ca.Account)
                 .WithMany(a => a.CustomerAccounts)
-                .HasForeignKey(ca => ca.AccountId);
+                .HasForeignKey(ca => ca.AccountNumber);
 
-            modelBuilder.Entity<Manager>().HasData(
-                new Manager
-                {
-                    Id = 1,
-                    FullName = "Ahmed Ali",
-                    Email = "ahmed@gmail.com",
-                    PhoneNumber = "01000000000",
-                    HireDate = new DateTime(2020, 1, 1)
-                });
+            // Account -> Branch
+            modelBuilder.Entity<Account>()
+                .HasOne(a => a.Branch)
+                .WithMany(b => b.Accounts)
+                .HasForeignKey(a => a.BranchId);
 
-            modelBuilder.Entity<Branch>().HasData(
-                new Branch
-                {
-                    Id = 1,
-                    Name = "Cairo Branch",
-                    BranchCode = "BR001",
-                    Address = "Cairo",
-                    PhoneNumber = "01111111111",
-                    ManagerId = 1
-                });
+            // Transaction -> Account
+            modelBuilder.Entity<Transaction>()
+                .HasOne(t => t.Account)
+                .WithMany(a => a.Transactions)
+                .HasForeignKey(t => t.AccountNumber);
+
 
             base.OnModelCreating(modelBuilder);
+
+            modelBuilder.Entity<Manager>().HasData(
+                new Manager { Id = 1, FullName = "Ahmed Hassan", Email = "ahmed@bank.com", PhoneNumber = "0100000000", HireDate = DateTime.Now }
+            );
+
+            modelBuilder.Entity<Branch>().HasData(
+                new Branch { Id = 1, Name = "Cairo Main Branch", BranchCode = "CAI-01", Address = "Cairo", PhoneNumber = "02222222", ManagerId = 1 }
+            );
         }
-
-        public DbSet<Branch> Branches { get; set; }
-
-        public DbSet<Manager> Managers { get; set; }
-
-        public DbSet<Customer> Customers { get; set; }
-
-        public DbSet<Account> Accounts { get; set; }
-
-        public DbSet<CustomerAccount> CustomerAccounts { get; set; }
-
-        public DbSet<Transaction> Transactions { get; set; }
     }
 }
